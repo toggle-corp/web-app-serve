@@ -132,10 +132,52 @@ jobs:
 
 ## K8s Guide
 
-### ArgoCD
+### Using Helm (Direct)
 
-**Sample app manifest**:
+**Download the Helm chart**
 
+```bash
+helm pull oci://ghcr.io/toggle-corp/web-app-serve-helm
+```
+
+**Create a config file**
+
+Let's name it `my-values.yaml`:
+```yaml
+fullnameOverride: my-web-app
+ingress:
+  ingressClassName: nginx
+  hostname: my-dashboard.togglecorp.com
+image:
+  name: ghcr.io/toggle-corp/my-dashboard
+  tag: feat-web-app-serve.cXXXXXXX
+resources:
+  requests:
+    cpu: "0.1"
+    memory: "100Mi"
+env:
+  APPLY_CONFIG__ENABLE_DEBUG: true
+  APP_TITLE: "My Dashboard"
+  APP_GRAPHQL_ENDPOINT: https://my-dashboard-api.togglecorp.com/graphql/
+```
+
+**Deploy to Kubernetes**
+
+```bash
+# Create a namespace
+kubectl create namespace test-my-dashboard
+
+# Install new or upgrade existing one
+helm upgrade --install \
+  -n test-my-dashboard \
+  my-dashboard \
+  oci://ghcr.io/toggle-corp/web-app-serve-helm \
+  --values ./my-values.yaml
+```
+
+### Using Helm with ArgoCD
+
+**Example ArgoCD app**
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -143,11 +185,11 @@ metadata:
   name: my-web-app
   namespace: argocd
   finalizers:
-  - resources-finalizer.argocd.argoproj.io
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   destination:
-    name: "in-cluster"
+    name: in-cluster
     namespace: my-web-app
   source:
     chart: web-app-serve-helm
@@ -177,13 +219,11 @@ spec:
       prune: true
       selfHeal: true
     managedNamespaceMetadata:
-      # NOTE: Tracking namespace with argoCD, so that application delete also deletes namespace which in return also deletes persistence volumes
-      #  So that the new environment starts with fresh production DB clone
       labels:
         argocd.argoproj.io/instance: my-web-app
       annotations:
         argocd.argoproj.io/tracking-id: >-
           my-web-app:apps/Namespace:my-web-app/my-web-app
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true
 ```
