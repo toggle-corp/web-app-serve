@@ -1,0 +1,15 @@
+fullnameOverride: test-123
+
+image:
+  name: ghcr.io/toggle-corp/hi/some-etl-dashboard-dev
+  tag: my-very-very-very-very-long-good-good-good-feat-web-app-serve.2c59d93
+  pullPolicy: Always
+
+ingress:
+  hostname: react.web-app.com
+  ingressClassName: nginx
+  dockerMetadataEnabled: false
+
+env:
+  APP_TITLE: "My APP"
+  APP_ENVIRONMENT: ALPHA

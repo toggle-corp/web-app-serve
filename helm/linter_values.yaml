@@ -1,0 +1,14 @@
+fullnameOverride: test-123
+
+image:
+  name: github.local/react/web-app
+  tag: latest
+  pullPolicy: Always
+
+ingress:
+  hostname: react.web-app.com
+  ingressClassName: nginx
+
+env:
+  APP_TITLE: "My APP"
+  APP_ENVIRONMENT: ALPHA

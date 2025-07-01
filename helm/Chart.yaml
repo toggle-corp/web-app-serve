@@ -1,0 +1,7 @@
+apiVersion: v2
+name: web-app-serve-helm
+description: "Basic Helm Chart to deploy Web Apps"
+type: application
+version: 0.1.1-dev0  # managed by release.sh
+sources:
+  - https://github.com/toggle-corp/web-app-serve
