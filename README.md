@@ -132,7 +132,10 @@ jobs:
 
 ## K8s Guide
 
-Sample ArgoCd app manifest
+### ArgoCD
+
+**Sample app manifest**:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
