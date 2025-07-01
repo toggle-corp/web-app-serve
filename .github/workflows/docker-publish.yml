@@ -43,6 +43,7 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: Dockerfile
+          target: web-app-serve
           push: false
           load: true
           provenance: false  # XXX: Without this we have untagged images in ghcr.io
