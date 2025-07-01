@@ -1,4 +1,4 @@
-## Usage Guide
+## Docker Guide
 
 ### Project Structure
 ```
@@ -128,4 +128,59 @@ jobs:
         uses: toggle-corp/web-app-serve/.github/actions/publish-web-app-serve@v0.1.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## K8s Guide
+
+Sample ArgoCd app manifest
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-web-app
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    name: "in-cluster"
+    namespace: my-web-app
+  source:
+    chart: web-app-serve-helm
+    repoURL: ghcr.io/toggle-corp
+    targetRevision: 0.1.1
+    helm:
+      valuesObject:
+        fullnameOverride: my-web-app
+        ingress:
+          ingressClassName: nginx
+          hostname: https://my-dashboard.togglecorp.com
+        image:
+          name: ghcr.io/toggle-corp/my-dashboard
+          tag: feat-web-app-serve.cXXXXXXX
+        resources:
+          requests:
+            cpu: "0.1"
+            memory: "100Mi"
+        env:
+          # Enable debug mode to see the diff by apply-config.sh
+          APPLY_CONFIG__ENABLE_DEBUG: true
+          # Placeholder replacement variables
+          APP_TITLE: "My Dashboard"
+          APP_GRAPHQL_ENDPOINT: https://my-dashboard-api.togglecorp.com/graphql/
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      # NOTE: Tracking namespace with argoCD, so that application delete also deletes namespace which in return also deletes persistence volumes
+      #  So that the new environment starts with fresh production DB clone
+      labels:
+        argocd.argoproj.io/instance: my-web-app
+      annotations:
+        argocd.argoproj.io/tracking-id: >-
+          my-web-app:apps/Namespace:my-web-app/my-web-app
+    syncOptions:
+    - CreateNamespace=true
 ```
