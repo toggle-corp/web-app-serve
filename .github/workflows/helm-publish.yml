@@ -81,11 +81,11 @@ jobs:
           echo "> Helm Chart: **$HELM_CHART**" >> $GITHUB_STEP_SUMMARY
           echo "> Helm Target Revision: **$HELM_TARGET_REVISION**" >> $GITHUB_STEP_SUMMARY
 
-          # Add annotations as well
-          echo "::notice::Helm Repo URL: **$OCI_REPO**"
-          echo "::notice::Helm Chart: **$HELM_CHART**"
-          echo "::notice::Helm Target Revision: **$HELM_TARGET_REVISION**"
-          # Add outputs as well
-          echo "helm_repo_url=$OCI_REPO" >> $GITHUB_OUTPUT
-          echo "helm_chart=$HELM_CHART" >> $GITHUB_OUTPUT
+          # Add annotations as well (This is shown in reverse order)
+          echo "::notice::Helm Target Revision: $HELM_TARGET_REVISION"
+          echo "::notice::Helm Chart: $HELM_CHART"
+          echo "::notice::Helm Repo URL: $OCI_REPO"
+          # Add outputs as well (This is shown in reverse order)
           echo "helm_target_revision=$HELM_TARGET_REVISION" >> $GITHUB_OUTPUT
+          echo "helm_chart=$HELM_CHART" >> $GITHUB_OUTPUT
+          echo "helm_repo_url=$OCI_REPO" >> $GITHUB_OUTPUT
