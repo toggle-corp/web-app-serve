@@ -1,0 +1,86 @@
+environment: prod
+
+fullnameOverride:
+
+## React image (static servied by nginx)
+## @param image.name Container image name
+## @param image.tag Container image tag
+## @param image.pullPolicy Container pull policy `Always|IfNotPresent|Never`
+## @param image.pullSecrets Container image pull secrets
+##
+image:
+  name:
+  tag:
+  pullPolicy: IfNotPresent
+  pullSecrets:
+
+## React container
+## @param container.name Container name
+## @param container.port Container port
+##
+container:
+  name: web-app-serve
+  port: 80
+
+## @param resources Set container requests and limits for different resources like CPU or memory
+## Example:
+## resources:
+##   requests:
+##     cpu: 2
+##     memory: 512Mi
+##   limits:
+##     cpu: 3
+##     memory: 1024Mi
+##
+resources:
+  requests:
+    cpu: "0.5"
+    memory: "100Mi"
+  limits:
+    cpu: "1"
+    memory: "100Mi"
+
+ingress:
+  ## @param ingress.enabled Enable an ingress resource
+  ##
+  enabled: true
+  ## @param ingress.dockerMetadataEnabled Enable an deployment docker image metadata in ingress labels
+  ##
+  dockerMetadataEnabled: true
+  ## @param ingress.ingressClassName Defines which ingress controller will implement the resource
+  ##
+  ingressClassName:
+  ## @param ingress.hostname Ingress hostname for the ingress
+  ## Hostname must be provided if Ingress is enabled.
+  ##
+  hostname:
+  ## @param ingress.labels to add additional ingress labels
+  ## e.g:
+  ## labels:
+  ##   node-role.kubernetes.io/ingress: platform
+  ##
+  labels: {}
+  ## @param ingress.labels to add ingress annotations
+  ## e.g:
+  ## annotations:
+  ##   kubernetes.io/ingress.class: nginx
+  ##
+  annotations: {}
+  ## @param ingress.tls Ingress TLS configuration
+  ##
+  tls:
+    ## @param ingress.tls.enabled Enable an tls for ingress resource
+    ##
+    enabled: false
+    ## @param ingress.tls.secretName Ingress TLS secrets name
+    ## secretName must be provided if Ingress TLS is enabled.
+    ##
+    secretName:
+
+## @param env with environment variables to pass to the container
+## e.g:
+## env:
+##   APP_TITLE: "My React APP"
+##   APP_ENVIRONMENT: "ALPHA"
+##
+env:
