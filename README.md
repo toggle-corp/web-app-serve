@@ -4,8 +4,11 @@ This guide shows how to package a frontend (React) app using Docker with a base 
 
 We use simple tools like `nginx`, `find`, `sed`, and `diff2html` to help package and debug SPA (Single Page Application) deployments.
 
-For real examples, see:  
-- https://github.com/IFRCGo/go-api
+For real examples, see:
+- https://github.com/IFRCGo/go-web-app/
+    - https://github.com/IFRCGo/go-web-app/tree/develop/web-app-serve
+    - https://github.com/IFRCGo/go-web-app/blob/develop/.github/workflows/publish-web-app-serve.yml
+    - https://github.com/IFRCGo/go-web-app/blob/develop/Dockerfile
 
 ### Project Structure
 
