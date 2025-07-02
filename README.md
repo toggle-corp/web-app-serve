@@ -1,5 +1,8 @@
 ## Docker Guide
 
+### Usages Examples
+- https://github.com/IFRCGo/go-api
+
 ### Project Structure
 ```
 
@@ -31,10 +34,10 @@ ENV APP_GRAPHQL_CODEGEN_ENDPOINT=./montandon-etl/schema.graphql
 ENV APP_TITLE=APP_TITLE_PLACEHOLDER
 ENV APP_GRAPHQL_ENDPOINT=APP_API_ENDPOINT_PLACEHOLDER
 
-RUN pnpm generate:type && pnpm build
+RUN pnpm build
 
 # ---------------------------------------------------------------------
-# Final image with nginx to serve the app
+# Final image with web-app-serve to serve the app
 FROM ghcr.io/toggle-corp/web-app-serve:v0.1.1 AS web-app-serve
 
 LABEL maintainer="Me"
@@ -47,8 +50,16 @@ ENV APPLY_CONFIG__SOURCE_DIRECTORY=/code/build/
 COPY --from=web-app-serve-build /code/build "$APPLY_CONFIG__SOURCE_DIRECTORY"
 COPY ./web-app-serve/apply-config.sh "$APPLY_CONFIG__APPLY_CONFIG_PATH"
 ````
+> [!TIP]
+> For more config options, See [./src/apply-config.sh](./src/apply-config.sh)
+
 > [!IMPORTANT]
-> For more config options, see [./src/apply-config.sh](./src/apply-config.sh)
+> Everything above `# Final image with web-app-serve to serve the app` is just placeholder commands.
+> Make sure to replace them with real ones.
+
+> [!NOTE]
+> `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` are used throughout this README.
+> Make sure to replace them with your actual environments.
 
 ### Configuration script (`apply-config.sh`)
 
@@ -60,11 +71,11 @@ find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_TITLE_PLACEHOLDER\>|
 find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_API_ENDPOINT_PLACEHOLDER\>|$APP_GRAPHQL_ENDPOINT|g" {} +
 ```
 > [!IMPORTANT]
-> `DESTINATION_DIRECTORY` is set by the internal web-app-serve script. see [./src/apply-config.sh](./src/apply-config.sh) search for `apply_config`
+> `DESTINATION_DIRECTORY` is set by the internal web-app-serve script. See [./src/apply-config.sh](./src/apply-config.sh) search for `apply_config`
 >
-> Environment variables (`APP_TITLE`, `APP_GRAPHQL_ENDPOINT`) must:
-> - match the placeholder names used during build. see Dockerfile
-> - be passed to the container at runtime.
+> Environment variables (eg: `APP_TITLE`, `APP_GRAPHQL_ENDPOINT`) must:
+> - Match the placeholder names used during build. See Dockerfile
+> - Be passed to the container at runtime.
 
 ### Docker Compose (`web-app-serve/docker-compose.yml`)
 
@@ -85,11 +96,11 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ../web-app-serve/apply-config.sh
+          path: ./apply-config.sh
           target: /code/apply-config.sh
 ```
-> [!Warning]
-> To use develop.watch, enable Docker Compose watch mode: \
+> [!IMPORTANT]
+> To use services.develop.watch, enable Docker Compose watch mode: \
 > https://docs.docker.com/compose/how-tos/file-watch/
 
 ### How to Debug Locally
@@ -103,16 +114,17 @@ Changes to `web-app-serve/apply-config.sh` will be picked up automatically when 
 
 ### GitHub Actions Workflow (`.github/workflows/publish-web-app-serve.yml`)
 
-> This workflow builds and publishes the Docker image when changes are pushed to specific branches.
+This workflow builds and publishes the Docker image when changes are pushed to specific branches.
+
 ```yaml
-name: Publish nginx serve image
+name: Publish web app serve
 
 on:
   workflow_dispatch:
   push:
     branches:
       - develop
-      - feature/*
+      - project/*
 
 permissions:
   packages: write
@@ -155,6 +167,8 @@ resources:
   requests:
     cpu: "0.1"
     memory: "100Mi"
+  limits:
+    memory: "300Mi"  # When biome (debug) is enabled
 env:
   APPLY_CONFIG__ENABLE_DEBUG: true
   APP_TITLE: "My Dashboard"
