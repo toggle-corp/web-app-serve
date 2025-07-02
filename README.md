@@ -27,7 +27,7 @@ For real examples, see:
 
 To package a React app using `web-app-serve`, we'll define a Dockerfile that includes:
 
-1. A build step for our app with placeholder values.
+1. A build step for your app with placeholder values.
 2. A final image using `web-app-serve` that updates those placeholders at runtime.
 
 ```dockerfile
