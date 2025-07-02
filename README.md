@@ -94,6 +94,7 @@ find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_API_ENDPOINT_PLACEHO
 
 > [!IMPORTANT]
 > `DESTINATION_DIRECTORY` is set internally by `web-app-serve`.
+>
 > Environment variables like `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` must:
 >
 > - Match placeholders used in your app build
