@@ -1,9 +1,14 @@
 ## Docker Guide
 
-### Usages Examples
+This guide shows how to package a frontend (React) app using Docker with a base image that allows configuration to be changed when the Nginx container starts.
+
+We use simple tools like `nginx`, `find`, `sed`, and `diff2html` to help package and debug SPA (Single Page Application) deployments.
+
+For real examples, see:  
 - https://github.com/IFRCGo/go-api
 
 ### Project Structure
+
 ```
 
 ├── .github/workflows
@@ -12,72 +17,93 @@
 │    ├── apply-config.sh
 │    └── docker-compose.yml
 └── Dockerfile
+
 ````
 
 ### Dockerfile Overview
+
+To package a React app using `web-app-serve`, we'll define a Dockerfile that includes:
+
+1. A build step for our app with placeholder values.
+2. A final image using `web-app-serve` that updates those placeholders at runtime.
+
 ```dockerfile
 # Builder stage
 FROM node:18-bullseye AS dev
 
-# ...other required steps
+# ... add your build steps here
 
 # ---------------------------------------------------------------------
 # Build stage for web app
 FROM dev AS web-app-serve-build
 
-# ...other required steps
+# ... add your build steps here
 
-# Static variables
+# Static value (used in build process)
 ENV APP_GRAPHQL_CODEGEN_ENDPOINT=./montandon-etl/schema.graphql
 
-# Placeholder variables for build which needs to be changed when used
+# Placeholder values (to be replaced later)
 ENV APP_TITLE=APP_TITLE_PLACEHOLDER
 ENV APP_GRAPHQL_ENDPOINT=APP_API_ENDPOINT_PLACEHOLDER
 
 RUN pnpm build
 
 # ---------------------------------------------------------------------
-# Final image with web-app-serve to serve the app
+# Final image using web-app-serve
 FROM ghcr.io/toggle-corp/web-app-serve:v0.1.1 AS web-app-serve
 
 LABEL maintainer="Me"
 LABEL org.opencontainers.image.source="https://github.com/my-org/my-best-dashboard"
 
-# Environment for configuration script
+# Environment for apply-config script
 ENV APPLY_CONFIG__APPLY_CONFIG_PATH=/code/apply-config.sh
 ENV APPLY_CONFIG__SOURCE_DIRECTORY=/code/build/
 
 COPY --from=web-app-serve-build /code/build "$APPLY_CONFIG__SOURCE_DIRECTORY"
 COPY ./web-app-serve/apply-config.sh "$APPLY_CONFIG__APPLY_CONFIG_PATH"
 ````
+
 > [!TIP]
-> For more config options, See [./src/apply-config.sh](./src/apply-config.sh)
+> For more config options, check: [./src/apply-config.sh](./src/apply-config.sh)
 
 > [!IMPORTANT]
-> Everything above `# Final image with web-app-serve to serve the app` is just placeholder commands.
-> Make sure to replace them with real ones.
+> Everything above `# Final image with web-app-serve to serve the app` is placeholder code.
+> Replace it with your actual build steps.
 
 > [!NOTE]
-> `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` are used throughout this README.
-> Make sure to replace them with your actual environments.
+> Make sure `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` match what your app needs.
+> These values will be replaced at runtime.
 
-### Configuration script (`apply-config.sh`)
+---
 
-This script replaces placeholders with real values:
+### Configuration Script (`apply-config.sh`)
+
+This script replaces placeholder values with real ones during container runtime.
+
+Example:
+
 ```bash
 #!/bin/bash -xe
 
 find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_TITLE_PLACEHOLDER\>|$APP_TITLE|g" {} +
 find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_API_ENDPOINT_PLACEHOLDER\>|$APP_GRAPHQL_ENDPOINT|g" {} +
 ```
+
 > [!IMPORTANT]
-> `DESTINATION_DIRECTORY` is set by the internal web-app-serve script. See [./src/apply-config.sh](./src/apply-config.sh) search for `apply_config`
+> `DESTINATION_DIRECTORY` is set internally by `web-app-serve`.
+> Environment variables like `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` must:
 >
-> Environment variables (eg: `APP_TITLE`, `APP_GRAPHQL_ENDPOINT`) must:
-> - Match the placeholder names used during build. See Dockerfile
-> - Be passed to the container at runtime.
+> - Match placeholders used in your app build
+> - Be passed into the container at runtime
+
+> [!IMPORTANT]
+> Make the script executable:
+> `chmod +x web-app-serve/apply-config.sh`
+
 
 ### Docker Compose (`web-app-serve/docker-compose.yml`)
+
+Use Docker Compose for local testing with live configuration updates.
 
 ```yaml
 name: my-org-my-best-dashboard
@@ -88,7 +114,9 @@ services:
       context: ../
       target: web-app-serve
     environment:
+      # web-app-serve config
       APPLY_CONFIG__ENABLE_DEBUG: true
+      # Placeholder replacement variables
       APP_TITLE: ${APP_TITLE:-My Dashboard}
       APP_GRAPHQL_ENDPOINT: ${APP_GRAPHQL_ENDPOINT:-http://localhost:8000/graphql/}
     ports:
@@ -99,22 +127,25 @@ services:
           path: ./apply-config.sh
           target: /code/apply-config.sh
 ```
+
 > [!IMPORTANT]
-> To use services.develop.watch, enable Docker Compose watch mode: \
-> https://docs.docker.com/compose/how-tos/file-watch/
+> To use `services.develop.watch`, enable Docker Compose watch mode: https://docs.docker.com/compose/how-tos/file-watch/
 
-### How to Debug Locally
-
-Run this command to start the app with live config updates:
+To run:
 
 ```bash
+# After making changes
+docker compose -f web-app-serve/docker-compose.yml build
+
 docker compose -f web-app-serve/docker-compose.yml up
 ```
-Changes to `web-app-serve/apply-config.sh` will be picked up automatically when docker watch is enabled
+
+When watch mode is enabled, updates to `apply-config.sh` are applied automatically.
+
 
 ### GitHub Actions Workflow (`.github/workflows/publish-web-app-serve.yml`)
 
-This workflow builds and publishes the Docker image when changes are pushed to specific branches.
+This workflow builds and pushes your Docker image to the GitHub container registry.
 
 ```yaml
 name: Publish web app serve
@@ -141,6 +172,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+> [!IMPORTANT]
+> To see what this action does internally, check: [.github/actions/publish-web-app-serve/action.yml](.github/actions/publish-web-app-serve/action.yml)
 
 ## K8s Guide
 
@@ -154,7 +187,8 @@ helm pull oci://ghcr.io/toggle-corp/web-app-serve-helm
 
 **Create a config file**
 
-Let's name it `my-values.yaml`:
+Save as `my-values.yaml`:
+
 ```yaml
 fullnameOverride: my-web-app
 ingress:
@@ -168,7 +202,7 @@ resources:
     cpu: "0.1"
     memory: "100Mi"
   limits:
-    memory: "300Mi"  # When biome (debug) is enabled
+    memory: "300Mi"  # For debug mode (biome needs more RAM at initial start)
 env:
   APPLY_CONFIG__ENABLE_DEBUG: true
   APP_TITLE: "My Dashboard"
@@ -178,10 +212,10 @@ env:
 **Deploy to Kubernetes**
 
 ```bash
-# Create a namespace
+# Create namespace
 kubectl create namespace test-my-dashboard
 
-# Install new or upgrade existing one
+# Install (or upgrade) the Helm release
 helm upgrade --install \
   -n test-my-dashboard \
   my-dashboard \
@@ -189,9 +223,12 @@ helm upgrade --install \
   --values ./my-values.yaml
 ```
 
+---
+
 ### Using Helm with ArgoCD
 
-**Example ArgoCD app**
+Example ArgoCD `Application` manifest:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -223,7 +260,7 @@ spec:
             cpu: "0.1"
             memory: "100Mi"
         env:
-          # Enable debug mode to see the diff by apply-config.sh
+          # web-app-serve config
           APPLY_CONFIG__ENABLE_DEBUG: true
           # Placeholder replacement variables
           APP_TITLE: "My Dashboard"
