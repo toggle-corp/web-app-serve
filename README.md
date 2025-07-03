@@ -180,9 +180,11 @@ jobs:
 > To run this workflow on a Pull Request, temporarily add your branch to the `on.push.branches` list.
 
 > [!TIP]
-> To avoid creating redundant images, remove `on.push` from the workflow and use `workflow_dispatch` to run it manually.
-> If you have [gh](https://cli.github.com/) setup locally, you can use this command to trigger it from your command line \
-`gh workflow run .github/workflows/publish-web-app-serve.yml --ref $(git rev-parse --abbrev-ref HEAD)`
+> To avoid creating redundant images, remove `on.push` from the workflow and use `workflow_dispatch` to run it manually.\
+> If you have [gh](https://cli.github.com/) setup locally, you can use this command to trigger it from your command line
+> ```bash
+> gh workflow run .github/workflows/publish-web-app-serve.yml --ref $(git rev-parse --abbrev-ref HEAD)`
+> ```
 > This will only work after `.github/workflows/publish-web-app-serve.yml` is added to the repo default branch.
 
 > [!IMPORTANT]
