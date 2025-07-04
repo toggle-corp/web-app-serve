@@ -1,115 +1,151 @@
+# web-app-serve
+
 ## Docker Guide
 
-This guide shows how to package a frontend (React) app using Docker with a base image that allows configuration to be changed when the Nginx container starts.
+This guide shows how to package a Web app (SPA and Vite) using Docker with a base image that allows configuration to be changed when the Nginx container starts.
 
-We use simple tools like `nginx`, `find`, `sed`, and `diff2html` to help package and debug SPA (Single Page Application) deployments.
+We use simple tools like `nginx`, `find`, `sed`, and `diff2html` to help package and debug SPA deployments.
 
-For real examples, see:
+For actual examples, see:
+
 - https://github.com/IFRCGo/go-web-app/
     - https://github.com/IFRCGo/go-web-app/tree/develop/web-app-serve
     - https://github.com/IFRCGo/go-web-app/blob/develop/.github/workflows/publish-web-app-serve.yml
     - https://github.com/IFRCGo/go-web-app/blob/develop/Dockerfile
+    - https://github.com/IFRCGo/go-web-app/blob/develop/app/env.ts
 
 ### Project Structure
 
 ```
-
 ├── .github/workflows
 │    └── publish-web-app-serve.yml
 ├── web-app-serve
-│    ├── apply-config.sh
+│    ├── .env
+│    ├── .gitignore
 │    └── docker-compose.yml
 └── Dockerfile
-
 ````
 
-### Dockerfile Overview
+### Setting up env variables placeholder using Vite
 
-To package a React app using `web-app-serve`, we'll define a Dockerfile that includes:
+In this guide, our example app uses these env variables:
 
-1. A build step for your app with placeholder values.
+- `APP_TITLE`
+- `APP_GRAPHQL_ENDPOINT`
+
+> [!IMPORTANT]
+> Replace them with the env variables for your own app.
+
+Use `vite-plugin-validate-env` plugin (togglecorp fork)
+
+```json
+{
+  "devDependencies": {
+      "@julr/vite-plugin-validate-env": "git+https://github.com/toggle-corp/vite-plugin-validate-env#97fc110"
+  }
+}
+```
+
+> [!TIP]
+> Check the latest version of `vite-plugin-validate-env` at https://github.com/toggle-corp/vite-plugin-validate-env/
+
+Update the `./env.ts` file and define `overrideDefine` config to enable env variable placeholder:
+
+```typescript
+import { Schema, defineConfig } from '@julr/vite-plugin-validate-env';
+
+const webAppServeEnabled = process.env.WEB_APP_SERVE_ENABLED?.toLowerCase() === 'true';
+if (webAppServeEnabled) {
+  console.warn('Building application for WEB_APP_SERVE')
+}
+
+export default defineConfig({
+  validator: "builtin",
+  schema: {
+      // NOTE: These are the dynamic env variables
+      APP_TITLE: Schema.string(),
+      APP_GRAPHQL_ENDPOINT: Schema.string({ format: 'url', protocol: true, tld: false }),
+  },
+  overrideDefine: (key, value) => {
+    // Default:
+    if (!webAppServeEnabled) {
+      return JSON.stringify(value);
+    }
+    // Override: Skip defining env variables if web app serve is enabled
+    if (value === null || value === undefined) {
+      // NOTE: value should always be defined during build
+      throw `Value for ${key} should not be null or undefined`;
+    }
+    const replacement_str = `WEB_APP_SERVE_PLACEHOLDER__${key}`;
+    // NOTE: For string values, we need to stringify 'replacement_str'
+    // This adds double quotes around the replacement string
+    return typeof value === 'string'
+      ? JSON.stringify(replacement_str)
+      : replacement_str;
+  },
+});
+```
+
+### Setting up Dockerfile
+
+To package a Web app using `web-app-serve`, we'll define a Dockerfile that includes:
+
+1. A build step for your app with env variables placeholder.
 2. A final image using `web-app-serve` that updates those placeholders at runtime.
 
 ```dockerfile
 # Builder stage
 FROM node:18-bullseye AS dev
 
-# ... add your build steps here
+# ... add your build steps here ...
 
 # ---------------------------------------------------------------------
 # Build stage for web app
 FROM dev AS web-app-serve-build
 
-# ... add your build steps here
+# ... add your build steps here ...
 
-# Static value (used in build process)
-ENV APP_GRAPHQL_CODEGEN_ENDPOINT=./montandon-etl/schema.graphql
+# NOTE: Dynamic env variables
+# These env variables can be dynamicallly defined in web-app-serve container runtime.
+# These variables are not included in the build files but the values should still be valid.
+# See "schema" field in "./env.ts"
+ENV APP_TITLE=My Best Dashboard
+ENV APP_GRAPHQL_ENDPOINT=https://my-best-dashboard.com/graphql/
 
-# Placeholder values (to be replaced later)
-ENV APP_TITLE=APP_TITLE_PLACEHOLDER
-ENV APP_GRAPHQL_ENDPOINT=APP_API_ENDPOINT_PLACEHOLDER
+# NOTE: Static env variables:
+# These env variables are used during build
+ENV APP_GRAPHQL_CODEGEN_ENDPOINT=./backend/schema.graphql
 
-RUN pnpm build
+# NOTE: WEB_APP_SERVE_ENABLED=true will skip defining the above dynamic env variables
+# See "overrideDefine" field in "./env.ts"
+RUN WEB_APP_SERVE_ENABLED=true pnpm build
 
 # ---------------------------------------------------------------------
 # Final image using web-app-serve
 FROM ghcr.io/toggle-corp/web-app-serve:v0.1.1 AS web-app-serve
 
-LABEL maintainer="Me"
 LABEL org.opencontainers.image.source="https://github.com/my-org/my-best-dashboard"
+LABEL org.opencontainers.image.authors="my-email@company.com"
 
-# Environment for apply-config script
-ENV APPLY_CONFIG__APPLY_CONFIG_PATH=/code/apply-config.sh
+# Env for apply-config script
 ENV APPLY_CONFIG__SOURCE_DIRECTORY=/code/build/
 
 COPY --from=web-app-serve-build /code/build "$APPLY_CONFIG__SOURCE_DIRECTORY"
-COPY ./web-app-serve/apply-config.sh "$APPLY_CONFIG__APPLY_CONFIG_PATH"
 ````
 
-> [!TIP]
-> For more config options, check: [./src/apply-config.sh](./src/apply-config.sh)
+> [!IMPORTANT]
+> Make sure all the dynamic environment variables are prefixed with `APP_`
 
 > [!IMPORTANT]
-> Everything above `# Final image with web-app-serve to serve the app` is placeholder code.
-> Replace it with your actual build steps.
-
-> [!NOTE]
-> Make sure `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` match what your app needs.
+> Make sure all the environment variables are defined (e.g. `APP_TITLE`, `APP_GRAPHQL_ENDPOINT`)\
 > These values will be replaced at runtime.
 
----
+### Setting up Docker Compose for debugging locally (`web-app-serve/docker-compose.yml`)
 
-### Configuration Script (`apply-config.sh`)
-
-This script replaces placeholder values with real ones during container runtime.
-
-Example:
-
-```bash
-#!/bin/bash -xe
-
-find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_TITLE_PLACEHOLDER\>|$APP_TITLE|g" {} +
-find "$DESTINATION_DIRECTORY" -type f -exec sed -i "s|\<APP_API_ENDPOINT_PLACEHOLDER\>|$APP_GRAPHQL_ENDPOINT|g" {} +
-```
-
-> [!IMPORTANT]
-> `DESTINATION_DIRECTORY` is set internally by `web-app-serve`.
->
-> Environment variables like `APP_TITLE` and `APP_GRAPHQL_ENDPOINT` must:
->
-> - Match placeholders used in your app build
-> - Be passed into the container at runtime
-
-> [!IMPORTANT]
-> Make the script executable:
-> `chmod +x web-app-serve/apply-config.sh`
-
-
-### Docker Compose (`web-app-serve/docker-compose.yml`)
-
-Use Docker Compose for local testing with live configuration updates.
+Create a `docker-compose.yml` file
 
 ```yaml
+# NOTE: The name should is mandatory and should be unique
 name: my-org-my-best-dashboard
 
 services:
@@ -120,34 +156,38 @@ services:
     environment:
       # web-app-serve config
       APPLY_CONFIG__ENABLE_DEBUG: true
-      # Placeholder replacement variables
-      APP_TITLE: ${APP_TITLE:-My Dashboard}
-      APP_GRAPHQL_ENDPOINT: ${APP_GRAPHQL_ENDPOINT:-http://localhost:8000/graphql/}
+    # NOTE: See "Dockerfile" to get dynamic env variables for .env file
+    env_file: .env
     ports:
-      - '8001:80'
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./apply-config.sh
-          target: /code/apply-config.sh
+      - '8050:80'
 ```
 
-> [!IMPORTANT]
-> To use `services.develop.watch`, enable Docker Compose watch mode: https://docs.docker.com/compose/how-tos/file-watch/
-
-To run:
+Create `.env` file
 
 ```bash
-# After making changes
-docker compose -f web-app-serve/docker-compose.yml build
-
-docker compose -f web-app-serve/docker-compose.yml up
+APP_TITLE=My Good Dashboard
+APP_GRAPHQL_ENDPOINT=https://my-good-dashboard.com/graphql/
 ```
 
-When watch mode is enabled, updates to `apply-config.sh` are applied automatically.
+> [!WARNING]
+> Replace them with the env variables for your own app.
 
+Make sure `.env` is ignored by git
 
-### GitHub Actions Workflow (`.github/workflows/publish-web-app-serve.yml`)
+```bash
+echo ".env" >> .gitignore
+```
+
+Run
+
+```bash
+docker compose -f web-app-serve/docker-compose.yml up --build
+```
+
+> [!TIP]
+> Re-run the command if you make any change
+
+### Setting up GitHub Actions Workflow (`.github/workflows/publish-web-app-serve.yml`)
 
 This workflow builds and pushes your Docker image to the GitHub container registry.
 
@@ -176,6 +216,13 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+> [!IMPORTANT]
+> If your application uses submodules, make sure to add `with.submodules: true` to the `actions/checkout` step.
+
+> [!IMPORTANT]
+> To see what this action does internally, check: [.github/actions/publish-web-app-serve/action.yml](.github/actions/publish-web-app-serve/action.yml)
+
 > [!TIP]
 > To run this workflow on a Pull Request, temporarily add your branch to the `on.push.branches` list.
 
@@ -186,12 +233,6 @@ jobs:
 > gh workflow run .github/workflows/publish-web-app-serve.yml --ref $(git rev-parse --abbrev-ref HEAD)`
 > ```
 > This will only work after `.github/workflows/publish-web-app-serve.yml` is added to the repo default branch.
-
-> [!IMPORTANT]
-> If your application uses submodules, make sure to add `with.submodules: true` to the `actions/checkout` step.
-
-> [!IMPORTANT]
-> To see what this action does internally, check: [.github/actions/publish-web-app-serve/action.yml](.github/actions/publish-web-app-serve/action.yml)
 
 ## K8s Guide
 

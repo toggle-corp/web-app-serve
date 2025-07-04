@@ -1,0 +1,1 @@
+console.log("Fetching data from ", "WEB_APP_SERVE_PLACEHOLDER__APP_GRAPHQL_ENDPOINT"); function init() { console.log("This is init script"); if ("import.meta.env.APP_TITLE".endsWith("dev")) { console.debug("Running on dev mode"); } console.log("Exiting!"); }
