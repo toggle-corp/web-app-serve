@@ -3,16 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <!-- Make sure to load the highlight.js CSS file before the Diff2Html CSS file -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/github.min.css" />
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/github.min.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.2.0/jsoneditor.min.css" type="text/css">
+
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.2.0/jsoneditor.min.js"></script>
+    <style>
+      #missingPlaceholderElement > .jsoneditor {
+        border: 1px solid red !important;
+      }
+    </style>
   </head>
   <script>
-
       document.addEventListener('DOMContentLoaded', function () {
         fetch('/__debug/changes.diff')
           .then((response) => {
@@ -22,14 +25,16 @@
             return response.text();
           })
           .then((diffString) => {
-            const targetElement = document.getElementById('myDiffElement');
+            const targetElement = document.getElementById('placeholderDiffElement');
             const configuration = {
+              colorScheme: 'auto',
               drawFileList: false,
               fileListToggle: false,
               fileListStartVisible: false,
               fileContentToggle: false,
               matching: 'lines',
-              outputFormat: 'line-by-line',
+              // outputFormat: 'line-by-line',
+              outputFormat: 'side-by-side',
               synchronisedScroll: true,
               highlight: true,
               renderNothingWhenEmpty: false,
@@ -44,14 +49,57 @@
           })
           .catch((error) => {
             console.error('Error loading diff:', error);
-            document.getElementById('myDiffElement').innerText =
+            document.getElementById('placeholderDiffElement').innerText =
               'Failed to load diff file.';
+          });
+
+        fetch('/__debug/missing_placeholders.json')
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Failed to missing_placeholders file');
+            }
+            return response.json();
+          })
+          .then((placeholders) => {
+            const targetElement = document.getElementById('missingPlaceholderElement');
+
+            const options = {
+              mode: "view",
+              mainMenuBar: false,
+              indentation: 4,
+              navigationBar: false,
+            }
+            const editor = new JSONEditor(targetElement, options)
+
+            // set json
+            const initialJson = placeholders
+              .filter((item) => item.type === 'match')
+              .map((item) => {
+                const data = {...item.data};
+                delete data['submatches'];
+                delete data['absolute_offset'];
+                return data;
+              });
+            editor.set(initialJson)
+            editor.expandAll()
+          })
+          .catch((error) => {
+            console.error('Error loading missing placeholders:', error);
+            document.getElementById('missingPlaceholderElement').innerText =
+              'Failed to load missing placeholders file.';
           });
       });
 
   </script>
   <body>
-    <h2>Nginx apply config changes:</h2>
-    <div id="myDiffElement"></div>
+    <h1>Web Server App: Debugger</h1>
+    <h2>Missing env variable replacements</h2>
+    <json-viewer
+      id="missingPlaceholderElement"
+      theme="light"
+      expand="true"
+    ></json-viewer>
+    <h2>Env variable replacements</h2>
+    <div id="placeholderDiffElement"></div>
   </body>
 </html>
