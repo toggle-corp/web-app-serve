@@ -48,6 +48,11 @@ echo "Preparing $version_tag..."
 msg="# managed by release.sh"
 
 sed -E -i "s/^version: .* $msg$/version: ${version_tag#v}  $msg/" "./helm/Chart.yaml"
+
+# Update README.md
+sed -E -i "/ghcr\.io\/toggle-corp\/web-app-serve:/ s/v[0-9]+\.[0-9]+\.[0-9]+/$version_tag/" README.md
+sed -E -i "/toggle-corp\/web-app-serve\/\.github\/actions\/publish-web-app-serve@/ s/v[0-9]+\.[0-9]+\.[0-9]+/$version_tag/" README.md
+
 git add ./helm/Chart.yaml
 
 # update the changelog
