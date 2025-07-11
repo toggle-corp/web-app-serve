@@ -16,25 +16,16 @@ jobs:
     name: CI
     uses: ./.github/workflows/docker-publish.yml
 
-  helm-publish:
-    name: CI
-    uses: ./.github/workflows/helm-publish.yml
-
   generate-release:
     name: Generate release
     runs-on: ubuntu-22.04
     needs:
-      - helm-publish
       - docker-publish
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Prepare
-        id: prep
-        uses: ./.github/actions/prep
 
       - name: Set the release version
         id: release
@@ -59,30 +50,6 @@ jobs:
           config: cliff.toml
           args: -vv --latest --no-exec --github-repo ${{ github.repository }} --strip all
 
-      - name: Changelog content pre-processing
-        id: changelog-pre-process
-        env:
-          HELM_REPO_URL: "${{ steps.prep.outputs.helm_oci_repo }}"
-          HELM_CHART: "${{ steps.prep.outputs.helm_chart }}"
-          HELM_TARGET_REVISION: "${{ steps.prep.outputs.helm_target_revision }}"
-          DOCKER_IMAGE: "${{ steps.prep.outputs.docker_image }}"
-        shell: bash
-        run: |
-          EXTENDEND_CHANGELOG=/tmp/extendend_changelog.md
-          echo "# Changelog" >> $EXTENDEND_CHANGELOG
-          echo "" >> $EXTENDEND_CHANGELOG
-
-          echo "> [!Important]" >> $EXTENDEND_CHANGELOG
-          echo "> Helm Repo URL: **$HELM_REPO_URL**" >> $EXTENDEND_CHANGELOG
-          echo "> Helm Chart: **$HELM_CHART**" >> $EXTENDEND_CHANGELOG
-          echo "> Helm Target Revision: **$HELM_TARGET_REVISION**" >> $EXTENDEND_CHANGELOG
-          echo "> Docker image: **$DOCKER_IMAGE**" >> $EXTENDEND_CHANGELOG
-
-          echo "${{ steps.git-cliff.outputs.content }}" >> $EXTENDEND_CHANGELOG
-
-          echo "extended_changelog_path=${EXTENDEND_CHANGELOG}" >> $GITHUB_OUTPUT
-          cat $EXTENDEND_CHANGELOG >> $GITHUB_STEP_SUMMARY
-
       - name: Create Github Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
@@ -90,5 +57,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: "v${{ steps.release.outputs.release_version }}"
           prerelease: ${{ steps.release.outputs.is_prerelease }}
-          body: ${{ steps.changelog-pre-process.outputs.extended_changelog }}
-          body_path: ${{ steps.changelog-pre-process.outputs.extended_changelog_path }}
+          body: ${{ steps.git-cliff.outputs.content }}

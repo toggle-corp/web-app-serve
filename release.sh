@@ -22,11 +22,17 @@ if [ -z "$version_tag" ]; then
     exit
 fi
 
+
+if [[ $version_tag != v* ]]; then
+    echo "Make sure version tag starts with vX.Y.Z"
+    exit 1
+fi
+
 if semver valid "$version_tag" > /dev/null; then
   echo "Valid SemVer: $version_tag"
 else
   echo "Invalid SemVer: \"$version_tag\"" >&2
-  echo "Eg: 0.1.1 0.1.1-dev0"
+  echo "Eg: v0.1.1 v0.1.1-dev0"
   exit 1
 fi
 
@@ -44,11 +50,11 @@ BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$BASE_DIR"
 
 echo "Preparing $version_tag..."
-# update the version
-msg="# managed by release.sh"
 
-sed -E -i "s/^version: .* $msg$/version: ${version_tag#v}  $msg/" "./helm/Chart.yaml"
-git add ./helm/Chart.yaml
+# Update README.md
+sed -E -i "/ghcr\.io\/toggle-corp\/web-app-serve:/ s/v[0-9]+\.[0-9]+\.[0-9]+/$version_tag/" README.md
+
+git add ./README.md
 
 # update the changelog
 git-cliff "$START_COMMIT..HEAD" --config cliff.toml --tag "$version_tag" > CHANGELOG.md

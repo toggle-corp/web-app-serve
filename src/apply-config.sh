@@ -1,4 +1,6 @@
-#!/bin/bash -xe
+#!/bin/env bash
+
+set -xe
 
 ENABLE_DEBUG=${APPLY_CONFIG__ENABLE_DEBUG:-false}
 APPLY_CONFIG_PATH=${APPLY_CONFIG__APPLY_CONFIG_PATH?Required}
@@ -20,6 +22,16 @@ function post_debug {
     ln -sf /web-app-serve/debug.html "$DEBUG_DIRECTORY/index.html"
 
     set +xe
+    # Check for WEB_APP_SERVE_PLACEHOLDER__ and dump to file
+    rg \
+        -A 2 -B 2 \
+        -F "WEB_APP_SERVE_PLACEHOLDER__" \
+        -g '!**/*.map' \
+        -g '!**/*.gz' \
+        --json \
+        "$DESTINATION_DIRECTORY" \
+        | jq -s . > "$DEBUG_DIRECTORY/missing_placeholders.json"
+
     # Show diffs (Useful to debug issues)
     find "$SOURCE_DIRECTORY" -type f -printf '%P\n' | while IFS= read -r file; do
         diff -u \
