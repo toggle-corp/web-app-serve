@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.2](https://github.com/toggle-corp/web-app-serve/compare/v0.1.1..v0.1.2) - 2025-07-11
+### Changes:
+
+#### 📚 Documentation
+
+- Add usages documentation - ([09f7f61](https://github.com/toggle-corp/web-app-serve/commit/09f7f61369c8d4a04c2d714624f33c6c24d0976e))
+
+#### ⚙️ Miscellaneous Tasks
+
+- Move helm and actions to new repositories - ([99f2968](https://github.com/toggle-corp/web-app-serve/commit/99f29688ed332f5e1ef39b17e52802765b78a207))
+- Update README with ./release.sh script - ([bfb558f](https://github.com/toggle-corp/web-app-serve/commit/bfb558f752440231cc4cfdeeb8448263d6d19b92))
+
+### 🍻 Pull Requests (1)
+- (#3) [Feat/docs](https://github.com/toggle-corp/web-app-serve/pull/3)
+
+### :tada: New Contributors (1)
+
+- [@tnagorra](https://github.com/tnagorra) made their first contribution in [#3](https://github.com/toggle-corp/web-app-serve/pull/3)
+
 ## [0.1.1](https://github.com/toggle-corp/web-app-serve/compare/v0.1.1-dev0..v0.1.1) - 2025-07-01
 ### Changes:
 
