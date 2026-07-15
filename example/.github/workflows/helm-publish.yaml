@@ -1,0 +1,31 @@
+name: Publish Helm
+
+on:
+  push:
+    branches:
+      # Adjust to your repo's default branch if it isn't `develop`.
+      - develop
+      - 'project/**'
+  # Any other branch can be published on demand.
+  workflow_dispatch:
+
+jobs:
+  helm-publish:
+    name: Publish Helm
+    runs-on: ubuntu-latest
+
+    # packages: write   -> push the wrapper chart to GHCR
+    # pull-requests: read -> the provenance annotation writer resolves the PR
+    #                        from the commit via `gh api`
+    permissions:
+      packages: write
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: pin to a tagged release once web-app-serve-action cuts one.
+      - uses: toggle-corp/web-app-serve-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          helm_publish: true
