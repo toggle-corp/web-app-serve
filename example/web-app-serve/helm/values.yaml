@@ -1,0 +1,12 @@
+# All overrides live under `app:` (the dependency alias) so they reach the
+# web-app-serve-helm subchart.
+app:
+  fullnameOverride: my-web-app
+  image:
+    # Rewritten by CI (web-app-serve-action) at publish time.
+    name: SET-BY-CICD-IMAGE
+    tag: SET-BY-CICD-TAG
+  ingress:
+    # Parent node the action writes provenance annotations into. Pre-seeded as
+    # an empty map so the annotation writer's parent-node guard passes on first run.
+    annotations: {}
