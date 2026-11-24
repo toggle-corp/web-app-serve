@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.0](https://github.com/toggle-corp/web-app-serve/compare/v0.1.2..v0.2.0) - 2026-11-24
+### Changes:
+
+#### 🚀  Features
+
+- Add helm wrapper chart example and CI publish workflow ([#4](https://github.com/toggle-corp/web-app-serve/issues/4)) - ([7815e71](https://github.com/toggle-corp/web-app-serve/commit/7815e718d05c0d6ad212ac151d469c3686992307))
+
+#### ⚙️ Miscellaneous Tasks
+
+- *(docker)* Pin nginx base image to 1.31.10 ([#6](https://github.com/toggle-corp/web-app-serve/issues/6)) - ([a1069e7](https://github.com/toggle-corp/web-app-serve/commit/a1069e73bace7aba38dc6c3827a9089f888dace4))
+- *(docker)* Pin nginx base image to 1.31.9 - ([60fd3d1](https://github.com/toggle-corp/web-app-serve/commit/60fd3d15758d94436e6a8fa069a6ad9d18dbdf88))
+
+### 🍻 Pull Requests (3)
+- (#4) [Feat: add helm wrapper chart example and CI publish workflow](https://github.com/toggle-corp/web-app-serve/pull/4)
+- (#5) [Chore(docker): pin nginx base image to 1.31.9](https://github.com/toggle-corp/web-app-serve/pull/5)
+- (#6) [Chore(docker): pin nginx base image to 1.31.10](https://github.com/toggle-corp/web-app-serve/pull/6)
+
+### :tada: New Contributors (1)
+
+- [@AmritBhusal](https://github.com/AmritBhusal) made their first contribution in [#6](https://github.com/toggle-corp/web-app-serve/pull/6)
+
 ## [0.1.2](https://github.com/toggle-corp/web-app-serve/compare/v0.1.1..v0.1.2) - 2025-07-11
 ### Changes:
 
