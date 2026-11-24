@@ -1,4 +1,4 @@
-FROM nginx:1.31.9 AS web-app-serve
+FROM nginx:1.31.10 AS web-app-serve
 
 LABEL org.opencontainers.image.authors="dev@togglecorp.com" \
       org.opencontainers.image.source="https://github.com/toggle-corp/web-app-serve" \
